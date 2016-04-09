@@ -7,7 +7,7 @@ import android.os.Handler;
 
 public class WelcomeActivity extends Activity
 {
-	private final long LENGTH = 2000;
+	private final long LENGTH = 1000;
 	Handler handler = new Handler();
 	@Override
 	protected void onCreate(Bundle savedInstanceState)

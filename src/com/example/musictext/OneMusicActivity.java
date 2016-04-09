@@ -3,11 +3,22 @@ package com.example.musictext;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 public class OneMusicActivity extends Activity
@@ -18,15 +29,211 @@ public class OneMusicActivity extends Activity
 	private RelativeLayout singLayout;
 	private ImageView disk;
 	private ImageView pointer;
+	private ImageButton playLove;
+	private ImageButton playWay;
+	private ImageButton playLast;
+	private ImageButton playStart;
+	private ImageButton playNext;
+	private TextView currentTime;
+	private TextView allTime;
+	private SeekBar seekBar;
+	private List<Songs> list;
+	private int lastPosition;
+	private int position = -1;
+	protected MediaPlayer media;
+	private MyBroadcast mbc;
+	private RotateAnimation aRotatePointer;
+	private RotateAnimation aRotateDisk;
+	private AnimationSet aSet = new AnimationSet(true);
+	private int way = 0;
+	private boolean isLove;
+	private boolean isPlay;
+	private boolean isStop = false;
+	private boolean lastState;
+	private int progress;
+	private int state = -1;
 	
+	public static final int PLAY_POSITION = 0;
+	public static final int IS_PLAY = 1;
+	public static final int LAST_SONG = 2;
+	public static final int NEXT_SONG = 3;
+	public static final int PLAY_WAY = 4;
+	public static final int PLAY_LOVE = 5;
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.one_music_layout);
 		Intent intent = getIntent();
-		List<Songs> list = (List<Songs>)intent.getSerializableExtra("list");
-		int position = intent.getIntExtra("position", 0);
+		list = (List<Songs>)intent.getSerializableExtra("list");
+		position = intent.getIntExtra("position", -1);
+		init();
+		getValue(position);
+		MyListener myListener = new MyListener();
+		playStart.setOnClickListener(myListener);
+		playNext.setOnClickListener(myListener);
+		playLast.setOnClickListener(myListener);
+		returnButton.setOnClickListener(myListener);
+		playLove.setOnClickListener(myListener);
+		playWay.setOnClickListener(myListener);
+		sendBroad();
+	
+		mbc = new MyBroadcast();
+		IntentFilter ifi = new IntentFilter("com.example.musictext.maintoone");
+		registerReceiver(mbc, ifi);
+	}
+	class MyListener implements OnClickListener
+	{
+		@Override
+		public void onClick(View v)
+		{
+			switch(v.getId())
+			{
+			case R.id.play_start:
+				state = IS_PLAY;
+				break;
+			case R.id.play_next:
+				state = NEXT_SONG;
+				break;
+			case R.id.play_last:
+				state = LAST_SONG;
+				break;
+			case R.id.return_button:
+				onBackPressed();
+				break;
+			case R.id.play_love:
+				isLove = !isLove;
+				list.get(position).setLove(isLove);
+				if (isLove)
+					playLove.setImageResource(R.drawable.play_icn_loved_prs);
+				else
+					playLove.setImageResource(R.drawable.play_icn_love);
+				state = PLAY_LOVE;
+				break;
+			case R.id.play_way:
+				if(way == 0)
+				{
+					playWay.setImageResource(R.drawable.play_icn_one);
+					way = 1;
+				}
+				else if(way == 1)
+				{
+					playWay.setImageResource(R.drawable.play_icn_loop);
+					way = 0;
+				}
+				state = PLAY_WAY;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	private void sendBroad()
+	{
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				while(!isStop)
+				{
+					if(state != -1)
+					{
+						Intent intent = new Intent("com.example.musictext.onetomain");
+						intent.putExtra("state", state);
+						if(state == PLAY_LOVE)
+							intent.putExtra("love", isLove);
+						else if(state == PLAY_WAY)
+							intent.putExtra("way", way);
+						sendBroadcast(intent);
+						state = -1;
+					}
+				}
+			}
+		}).start();
 	}
 
+	private void getValue(int position)
+	{
+		oneName.setText(list.get(position).getTitle());
+		oneAuthor.setText(list.get(position).getArtist());
+		allTime.setText(list.get(position).getDuration() + "");
+		seekBar.setMax(list.get(position).getDuration());
+		isLove = list.get(position).isLove();
+		if (isLove)
+			playLove.setImageResource(R.drawable.play_icn_loved_prs);
+		else
+			playLove.setImageResource(R.drawable.play_icn_love);
+	}
+
+	private void init()
+	{
+		returnButton = (ImageButton) findViewById(R.id.return_button);
+		oneName = (TextView) findViewById(R.id.one_name);
+		oneAuthor = (TextView) findViewById(R.id.one_author);
+		singLayout = (RelativeLayout) findViewById(R.id.sing_layout);
+		disk = (ImageView) findViewById(R.id.disk);
+		pointer = (ImageView) findViewById(R.id.pointer);
+		playLove = (ImageButton) findViewById(R.id.play_love);
+		playWay = (ImageButton) findViewById(R.id.play_way);
+		playLast = (ImageButton) findViewById(R.id.play_last);
+		playStart = (ImageButton)findViewById(R.id.play_start);
+		playNext = (ImageButton)findViewById(R.id.play_next);
+		currentTime = (TextView)findViewById(R.id.current_time);
+		allTime = (TextView)findViewById(R.id.all_time);
+		seekBar = (SeekBar)findViewById(R.id.seek_bar);
+		seekBar.setEnabled(true);
+	}
+	
+	class MyBroadcast extends BroadcastReceiver
+	{
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			lastPosition = position;
+			position = intent.getIntExtra("id", -1);
+			if(lastPosition != position)
+				getValue(position);
+			progress = intent.getIntExtra("progress", 0);
+			lastState = isPlay;
+			isPlay = intent.getBooleanExtra("isplay", false);
+			if(lastState && !isPlay)
+				changeImage1();
+			seekBar.setProgress(progress);
+			currentTime.setText(progress + "");
+			if(isPlay)
+			{
+				playStart.setImageResource(R.drawable.desk_pause);
+			}
+			else
+			{
+				playStart.setImageResource(R.drawable.desk_play);
+			}
+		}
+	}
+	private void changeImage1()
+	{
+		Log.d("change", "1");
+		aSet.reset();
+		aRotatePointer = new RotateAnimation(0, -45, Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0);
+		aRotatePointer.setDuration(1000);
+		aRotatePointer.setFillAfter(true);
+		aSet.addAnimation(aRotatePointer);
+		pointer.setAnimation(aSet);
+	}
+	private void changeImage2()
+	{
+		aSet.reset();
+		aRotatePointer = new RotateAnimation(0, 45, Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0);
+		aRotatePointer.setDuration(1000);
+		aRotatePointer.setFillAfter(true);
+		aSet.addAnimation(aRotatePointer);
+		pointer.setAnimation(aSet);
+	}
+	@Override
+	public void onBackPressed()
+	{
+		isStop = true;
+		super.onBackPressed();
+	}
 }

@@ -31,6 +31,7 @@
             android:ellipsize="end"
             android:gravity="center_horizontal"
             android:layout_toRightOf="@id/return_button"
+            android:layout_below="@id/one_name"
             android:layout_alignBottom="@id/return_button"
             android:text="author"
             android:textColor="#ffffff"/>
@@ -122,10 +123,11 @@
             android:text="0"/>
         <SeekBar 
             android:id="@+id/seek_bar"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
             android:layout_toRightOf="@id/current_time"
-            android:layout_above="@id/play_love"/>
+            android:layout_toLeftOf="@id/all_time"
+            android:layout_above="@id/play_love"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
     </RelativeLayout>
     
     

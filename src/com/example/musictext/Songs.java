@@ -13,6 +13,16 @@ public class Songs implements Serializable
 	private String year;
 	private int duration;
 	private int size;
+	private boolean isLove;
+	
+	public boolean isLove()
+	{
+		return isLove;
+	}
+	public void setLove(boolean isLove)
+	{
+		this.isLove = isLove;
+	}
 	public int getId()
 	{
 		return id;
@@ -87,6 +97,6 @@ public class Songs implements Serializable
 	}
 	public String toString()
 	{
-		return "歌曲名: " + getTitle() + "\n歌手: " + getArtist() + "\n专辑名: " + getAlbum() + "\n路径: " + getData() + "\n时长: " + getDuration() + "\n大小: " + getSize() + "\n出版日期: " + getYear();
+		return "歌曲名: " + getTitle() + "\n歌手: " + getArtist() + "\n专辑名: " + getAlbum() + "\n路径: " + getData() + "\n时长: " + getDuration() + "\n大小: " + getSize() + "\n出版日期: " + getYear() + "\nisLove:" + isLove;
 	}
 }

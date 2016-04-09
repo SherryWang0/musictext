@@ -32,6 +32,7 @@ public class MusicUtils
 			song.setSize(cursor.getInt(cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)));
 			song.setTitle(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE)));
 			song.setYear(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.YEAR)));
+	//		song.setLove(true);
 			list.add(song);
 		}
 		return list;

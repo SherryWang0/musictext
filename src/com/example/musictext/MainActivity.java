@@ -5,7 +5,10 @@ import java.io.Serializable;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -39,6 +42,10 @@ public class MainActivity extends Activity
 	private MediaPlayer mediaPlayer = new MediaPlayer();
 	private MyHandler handler;
 	private int p;
+	private boolean isStop = false; 
+	private int way = 0;
+	private MyBroadcast mbc;
+	private IntentFilter ifi;
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -75,7 +82,6 @@ public class MainActivity extends Activity
 			public void onItemClick(AdapterView<?> parent, View view, final int position, long id)
 			{
 				p = position;
-				Log.d("onclick", position + "");
 				songName.setText(list.get(position).getTitle());
 				singer.setText(list.get(position).getArtist());
 				progressBar.setMax(list.get(position).getDuration());
@@ -102,7 +108,48 @@ public class MainActivity extends Activity
 			}
 		});
 		listView.setOnItemLongClickListener(new MyLongListener(MainActivity.this, list, adapter));
-		
+		sendBroad();
+		mbc = new MyBroadcast();
+		ifi = new IntentFilter("com.example.musictext.onetomain");
+		registerReceiver(mbc, ifi);
+	}
+	class MyBroadcast extends BroadcastReceiver
+	{
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			int state = intent.getIntExtra("state", -1);
+			if(state == OneMusicActivity.IS_PLAY)
+				buttonStart(p);
+			else if(state == OneMusicActivity.NEXT_SONG)
+				next(p);
+			else if(state == OneMusicActivity.LAST_SONG)
+				last(p);
+			else if(state == OneMusicActivity.PLAY_LOVE)
+				list.get(p).setLove(intent.getBooleanExtra("love", false));
+			else if(state == OneMusicActivity.PLAY_WAY)
+				way = intent.getIntExtra("way", 0);
+		}
+	}
+	private void sendBroad()
+	{
+		new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				while(!isStop)
+				{
+					int pro = progressBar.getProgress();
+					boolean isPlay = mediaPlayer.isPlaying();
+					Intent intent = new Intent("com.example.musictext.maintoone");
+					intent.putExtra("progress", pro);
+					intent.putExtra("id", p);
+					intent.putExtra("isplay", isPlay);
+					sendBroadcast(intent);
+				}
+			}
+		}).start();
 	}
 	class MyListener implements OnClickListener
 	{
@@ -122,68 +169,13 @@ public class MainActivity extends Activity
 			switch(v.getId())
 			{
 			case R.id.next:
-				try
-				{
-					if(mediaPlayer.isPlaying())
-						stop();
-					if(p == list.size() - 1)
-						p = 0;
-					else
-						p = p + 1;
-					start(p);
-					Log.d("....", p + "");
-					songName.setText(list.get(p).getTitle());
-					singer.setText(list.get(p).getArtist());
-					progressBar.setMax(list.get(p).getDuration());
-				}catch(IllegalArgumentException e)
-				{
-					e.printStackTrace();
-				}catch(SecurityException e)
-				{
-					e.printStackTrace();
-				}catch(IllegalStateException e)
-				{
-					e.printStackTrace();
-				}
+				next(p);
 				break;
 			case R.id.start:
-				if(mediaPlayer.isPlaying())
-				{
-					mediaPlayer.pause();
-					start.setImageResource(R.drawable.playbar_btn_play);
-				}
-					
-				else if(!mediaPlayer.isPlaying())
-				{
-					mediaPlayer.start();
-					listen(p);
-					start.setImageResource(R.drawable.playbar_btn_pause);
-				}
+				buttonStart(p);
 				break;
 			case R.id.last:
-				try
-				{
-					if (mediaPlayer.isPlaying())
-						stop();
-					if (p == 0)
-						p = list.size() - 1;
-					else
-						p = p - 1;
-					start(p);
-					Log.d("£¬£¬£¬£¬", p + "");
-					songName.setText(list.get(p).getTitle());
-					singer.setText(list.get(p).getArtist());
-					progressBar.setMax(list.get(p).getDuration());
-				}catch(IllegalArgumentException e)
-				{
-					e.printStackTrace();
-				}catch(SecurityException e)
-				{
-					e.printStackTrace();
-				}catch(IllegalStateException e)
-				{
-					e.printStackTrace();
-				}
+				last(p);
 				break;
 			case R.id.layout:
 				oneMusic(list, p);
@@ -207,6 +199,71 @@ public class MainActivity extends Activity
 		}catch(IOException e)
 		{
 			e.printStackTrace();
+		}
+	}
+	public void last(int p2)
+	{
+		try
+		{
+			if (mediaPlayer.isPlaying())
+				stop();
+			if (p2 == 0)
+				p = list.size() - 1;
+			else
+				p = p2 - 1;
+			start(p);
+			songName.setText(list.get(p).getTitle());
+			singer.setText(list.get(p).getArtist());
+			progressBar.setMax(list.get(p).getDuration());
+		}catch(IllegalArgumentException e)
+		{
+			e.printStackTrace();
+		}catch(SecurityException e)
+		{
+			e.printStackTrace();
+		}catch(IllegalStateException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public void next(int p2)
+	{
+		try
+		{
+			if(mediaPlayer.isPlaying())
+				stop();
+			if(p2 == list.size() - 1)
+				p = 0;
+			else
+				p = p2 + 1;
+			start(p);
+			songName.setText(list.get(p).getTitle());
+			singer.setText(list.get(p).getArtist());
+			progressBar.setMax(list.get(p).getDuration());
+		}catch(IllegalArgumentException e)
+		{
+			e.printStackTrace();
+		}catch(SecurityException e)
+		{
+			e.printStackTrace();
+		}catch(IllegalStateException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public void buttonStart(int position)
+	{
+		if(mediaPlayer.isPlaying())
+		{
+			mediaPlayer.pause();
+			start.setImageResource(R.drawable.playbar_btn_play);
+		}
+			
+		else if(!mediaPlayer.isPlaying())
+		{
+			mediaPlayer.start();
+			listen(position);
+			start.setImageResource(R.drawable.playbar_btn_pause);
 		}
 	}
 	private void oneMusic(List<Songs> list, int p)
@@ -281,10 +338,15 @@ public class MainActivity extends Activity
 					msg.what = current;
 					if(mediaPlayer.getCurrentPosition() == mediaPlayer.getDuration())
 					{
-						if(position == list.size() - 1)
-							p = 0;
-						else
-							p = position + 1;
+						if(way == 0)
+						{
+							if(position == list.size() - 1)
+								p = 0;
+							else
+								p = position + 1;
+						}
+						else if(way == 1)
+							p = position;
 						start(p);
 						last.setOnClickListener(new MyListener(p));
 						next.setOnClickListener(new MyListener(p));
@@ -300,13 +362,15 @@ public class MainActivity extends Activity
 	@Override
 	protected void onDestroy()
 	{
-		super.onDestroy();
+		
 		mediaPlayer.release();
 		list.clear();
+		super.onDestroy();
 	}
 	@Override
 	public void onBackPressed()
 	{
+		isStop = true;
 		super.onBackPressed();
 		onDestroy();
 	}
