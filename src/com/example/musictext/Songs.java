@@ -15,6 +15,17 @@ public class Songs implements Serializable
 	private int size;
 	private boolean isLove;
 	
+	public String getTime()
+	{
+		int all = duration / 1000;
+		int mi = all / 60;
+		int se = all % 60;
+		if(se < 10)
+			return mi + ":0" + se;
+		else
+			return mi + ":" + se;
+	}
+	
 	public boolean isLove()
 	{
 		return isLove;
@@ -99,4 +110,5 @@ public class Songs implements Serializable
 	{
 		return "歌曲名: " + getTitle() + "\n歌手: " + getArtist() + "\n专辑名: " + getAlbum() + "\n路径: " + getData() + "\n时长: " + getDuration() + "\n大小: " + getSize() + "\n出版日期: " + getYear() + "\nisLove:" + isLove;
 	}
+	
 }

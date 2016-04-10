@@ -49,7 +49,7 @@ public class MyAdapter extends BaseAdapter
 		String name = list.get(position).getTitle() + "-" + list.get(position).getAlbum();
 		listName.setText(name);
 		listSinger.setText(list.get(position).getArtist());
-		listTime.setText(list.get(position).getDuration()+"");
+		listTime.setText(list.get(position).getTime());
 		return v;
 	}
 

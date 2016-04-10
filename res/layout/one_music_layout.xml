@@ -39,7 +39,7 @@
     <RelativeLayout 
         android:id="@+id/sing_layout"
         android:layout_width="match_parent"
-        android:layout_height="320dp"
+        android:layout_height="370dp"
         android:clickable="true">
         <ImageView 
             android:id="@+id/disk"

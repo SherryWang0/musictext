@@ -10,8 +10,11 @@ import android.content.IntentFilter;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.view.View.OnClickListener;
+import android.view.View.OnTouchListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.RotateAnimation;
@@ -19,6 +22,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 public class OneMusicActivity extends Activity
@@ -42,15 +46,13 @@ public class OneMusicActivity extends Activity
 	private int position = -1;
 	protected MediaPlayer media;
 	private MyBroadcast mbc;
-	private RotateAnimation aRotatePointer;
-	private RotateAnimation aRotateDisk;
-	private AnimationSet aSet = new AnimationSet(true);
+	
 	private int way = 0;
 	private boolean isLove;
 	private boolean isPlay;
 	private boolean isStop = false;
 	private boolean lastState;
-	private int progress;
+	private int pro;
 	private int state = -1;
 	
 	public static final int PLAY_POSITION = 0;
@@ -63,6 +65,7 @@ public class OneMusicActivity extends Activity
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.one_music_layout);
 		Intent intent = getIntent();
 		list = (List<Songs>)intent.getSerializableExtra("list");
@@ -76,6 +79,52 @@ public class OneMusicActivity extends Activity
 		returnButton.setOnClickListener(myListener);
 		playLove.setOnClickListener(myListener);
 		playWay.setOnClickListener(myListener);
+		seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener()
+		{
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser)
+			{
+				if(fromUser)
+				{
+					seekBar.setProgress(progress);
+					pro = progress;
+					state = PLAY_POSITION;
+				}
+			}
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar)
+			{
+			}
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar)
+			{
+			}
+		});
+		singLayout.setOnTouchListener(new OnTouchListener()
+		{
+			float x1, x2;
+			@Override
+			public boolean onTouch(View v, MotionEvent event)
+			{
+				if(event.getAction() == MotionEvent.ACTION_DOWN)
+				{
+					x1 = event.getX();
+				//实现点击出现歌词的功能	
+					return true;
+				}
+				else if(event.getAction() == MotionEvent.ACTION_UP)
+				{
+					x2 = event.getX();
+					if(x2 > x1)
+						state = LAST_SONG;
+					else if(x2 <x1)
+						state = NEXT_SONG;
+					return true;
+				}
+				else
+					return false;
+			}
+		});
 		sendBroad();
 	
 		mbc = new MyBroadcast();
@@ -145,6 +194,8 @@ public class OneMusicActivity extends Activity
 							intent.putExtra("love", isLove);
 						else if(state == PLAY_WAY)
 							intent.putExtra("way", way);
+						else if(state == PLAY_POSITION)
+							intent.putExtra("pro", pro);
 						sendBroadcast(intent);
 						state = -1;
 					}
@@ -157,7 +208,7 @@ public class OneMusicActivity extends Activity
 	{
 		oneName.setText(list.get(position).getTitle());
 		oneAuthor.setText(list.get(position).getArtist());
-		allTime.setText(list.get(position).getDuration() + "");
+		allTime.setText(list.get(position).getTime());
 		seekBar.setMax(list.get(position).getDuration());
 		isLove = list.get(position).isLove();
 		if (isLove)
@@ -194,13 +245,18 @@ public class OneMusicActivity extends Activity
 			position = intent.getIntExtra("id", -1);
 			if(lastPosition != position)
 				getValue(position);
-			progress = intent.getIntExtra("progress", 0);
+			pro = intent.getIntExtra("progress", 0);
 			lastState = isPlay;
 			isPlay = intent.getBooleanExtra("isplay", false);
 			if(lastState && !isPlay)
+			{
 				changeImage1();
-			seekBar.setProgress(progress);
-			currentTime.setText(progress + "");
+			}
+			else if(!lastState && isPlay)
+				changeImage2();
+			
+			seekBar.setProgress(pro);
+			currentTime.setText(getTime(pro));
 			if(isPlay)
 			{
 				playStart.setImageResource(R.drawable.desk_pause);
@@ -211,21 +267,41 @@ public class OneMusicActivity extends Activity
 			}
 		}
 	}
+	private String getTime(int duration)
+	{
+		int all = duration / 1000;
+		int mi = all / 60;
+		int se = all % 60;
+		if(se < 10)
+			return mi + ":0" + se;
+		else
+			return mi + ":" + se;
+	}
+	public void changeDisk()
+	{
+		AnimationSet aSet = new AnimationSet(true);
+		RotateAnimation aRotateDisk = new RotateAnimation(0, 360, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+		aRotateDisk.setDuration(1000);
+		aRotateDisk.setFillAfter(true);
+		aSet.addAnimation(aRotateDisk);
+		disk.setAnimation(aSet);
+	}
+
 	private void changeImage1()
 	{
-		Log.d("change", "1");
-		aSet.reset();
-		aRotatePointer = new RotateAnimation(0, -45, Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0);
-		aRotatePointer.setDuration(1000);
+		AnimationSet aSet = new AnimationSet(true);
+		RotateAnimation aRotatePointer = new RotateAnimation(0, 25, Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0);
+		aRotatePointer.setDuration(500);
 		aRotatePointer.setFillAfter(true);
 		aSet.addAnimation(aRotatePointer);
 		pointer.setAnimation(aSet);
+		
 	}
 	private void changeImage2()
 	{
-		aSet.reset();
-		aRotatePointer = new RotateAnimation(0, 45, Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0);
-		aRotatePointer.setDuration(1000);
+		AnimationSet aSet = new AnimationSet(true);
+		RotateAnimation aRotatePointer = new RotateAnimation(0, -25, Animation.RELATIVE_TO_SELF, 0, Animation.RELATIVE_TO_SELF, 0);
+		aRotatePointer.setDuration(500);
 		aRotatePointer.setFillAfter(true);
 		aSet.addAnimation(aRotatePointer);
 		pointer.setAnimation(aSet);

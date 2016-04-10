@@ -16,6 +16,7 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ImageButton;
@@ -50,6 +51,7 @@ public class MainActivity extends Activity
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.main_layout);
 		layout = (RelativeLayout)findViewById(R.id.layout);
 		progressBar = (ProgressBar)findViewById(R.id.progress_bar);
@@ -129,6 +131,8 @@ public class MainActivity extends Activity
 				list.get(p).setLove(intent.getBooleanExtra("love", false));
 			else if(state == OneMusicActivity.PLAY_WAY)
 				way = intent.getIntExtra("way", 0);
+			else if(state == OneMusicActivity.PLAY_POSITION)
+				mediaPlayer.seekTo(intent.getIntExtra("pro", 0));
 		}
 	}
 	private void sendBroad()
